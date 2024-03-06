@@ -137,7 +137,7 @@ spec:
           - name: DB_ENGINE
             value: django.db.backends.postgresql
           - name: POSTGRES_HOST
-            value: recipes-postgres
+            value: postgres
           - name: POSTGRES_PORT
             value: "5432"
           - name: POSTGRES_USER
