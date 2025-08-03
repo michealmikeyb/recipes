@@ -132,6 +132,13 @@ This can either be a relative path from the applications base path or the url of
 STATIC_URL=/static/
 ```
 
+#### Static root
+
+> default `<basedir>/staticfiles` - options `/some/other/media/path`.
+
+Where staticfiles should be stored on disk. The default location is a
+`staticfiles` subfolder at the root of the application directory.
+
 #### Media URL
 
 > default `/static/` - options: `/any/url/path/`, `https://any.domain.name/and/url/path`
@@ -293,6 +300,12 @@ PRIVACY_URL=
 IMPRINT_URL=
 ```
 
+#### Rate Limits
+
+There are some rate limits that can be configured.
+
+- RATELIMIT_URL_IMPORT_REQUESTS: limit the number of external URL import requests. Useful to prevent your server from being abused for malicious requests.
+
 ### Authentication
 
 All configurable variables regarding authentication.
@@ -354,7 +367,7 @@ SOCIAL_PROVIDERS = allauth.socialaccount.providers.github, allauth.socialaccount
 Allow authentication via the REMOTE-USER header (can be used for e.g. authelia).
 
 !!! danger
-    Leave off if you don't know what you are doing! Enabling this without proper configuration will enable anybody 
+    Leave off if you don't know what you are doing! Enabling this without proper configuration will enable anybody
     to login with any username!
 
 ```
@@ -377,6 +390,14 @@ AUTH_LDAP_TLS_CACERTFILE=
 AUTH_LDAP_START_TLS=
 ```
 
+Instead of passing the LDAP password directly through the environment variable `AUTH_LDAP_BIND_PASSWORD`,
+you can set the password in a file and set the environment variable `AUTH_LDAP_BIND_PASSWORD_FILE`
+to the path of the file containing the ldap secret.
+
+```
+AUTH_LDAP_BIND_PASSWORD_FILE=/run/secrets/ldap_password.txt
+```
+
 ### External Services
 
 #### Email
@@ -394,6 +415,14 @@ EMAIL_USE_TLS=0
 EMAIL_USE_SSL=0
 # email sender address (default 'webmaster@localhost')
 DEFAULT_FROM_EMAIL=
+```
+
+Instead of passing the email password directly through the environment variable `EMAIL_HOST_PASSWORD`,
+you can set the password in a file and set the environment variable `EMAIL_HOST_PASSWORD_FILE`
+to the path of the file containing the ldap secret.
+
+```
+EMAIL_HOST_PASSWORD_FILE=/run/secrets/email_password.txt
 ```
 
 Optional settings (only copy the ones you need)
@@ -424,6 +453,13 @@ S3_SECRET_ACCESS_KEY=
 S3_BUCKET_NAME=
 ```
 
+Alternatively you can point to a file containing the S3_SECRET_ACCESS_KEY value. If using containers make sure the file is
+persistent and available inside the container.
+
+```
+S3_SECRET_ACCESS_KEY_FILE=/path/to/file.txt
+```
+
 Optional settings (only copy the ones you need)
 
 ```
@@ -432,6 +468,20 @@ S3_QUERYSTRING_AUTH=1 # default true, set to 0 to serve media from a public buck
 S3_QUERYSTRING_EXPIRE=3600 # number of seconds querystring are valid for
 S3_ENDPOINT_URL= # when using a custom endpoint like minio
 S3_CUSTOM_DOMAIN= # when using a CDN/proxy to S3 (see https://github.com/TandoorRecipes/recipes/issues/1943)
+```
+
+#### AI Integration
+
+To use AI to perform different tasks you need to configure an API key and the AI provider. [LiteLLM](https://www.litellm.ai/) is used
+to make a standardized request to different AI providers of your liking. 
+
+Configuring this via environment parameters is a temporary solution. In the future I plan on adding support for multiple AI providers per Tandoor instance
+with the option to select them for various tasks. For now only gemini 2.0 flash has been tested but feel free to try out other models. 
+
+```
+AI_API_KEY=
+AI_MODEL_NAME=gemini/gemini-2.0-flash
+AI_RATELIMIT=60/hour
 ```
 
 #### FDC Api
@@ -561,7 +611,7 @@ STICKY_NAV_PREF_DEFAULT=1
 
 > default `100` - options: `0-X`
 
-The default for the number of spaces a user can own. By setting to 0 space creation for users will be disabled. 
+The default for the number of spaces a user can own. By setting to 0 space creation for users will be disabled.
 Superusers can always bypass this limit.
 
 ```
@@ -586,7 +636,7 @@ TZ=Europe/Berlin
 #### Default Theme
 > default `0` - options `1-X` (space ID)
 
-Tandoors appearance can be changed on a user and space level but unauthenticated users always see the tandoor default style. 
+Tandoors appearance can be changed on a user and space level but unauthenticated users always see the tandoor default style.
 With this setting you can specify the ID of a space of which the appearance settings should be applied if a user is not logged in.
 
 ```
@@ -633,7 +683,7 @@ DRF_THROTTLE_RECIPE_URL_IMPORT=60/hour
 
 #### Default Space Limits
 You might want to limit how many resources a user might create. The following settings apply automatically to newly
-created spaces. These defaults can be changed in the admin view after a space has been created. 
+created spaces. These defaults can be changed in the admin view after a space has been created.
 
 If unset, all settings default to unlimited/enabled
 

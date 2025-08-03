@@ -5,7 +5,11 @@ TANDOOR_PORT="${TANDOOR_PORT:-8080}"
 GUNICORN_WORKERS="${GUNICORN_WORKERS:-3}"
 GUNICORN_THREADS="${GUNICORN_THREADS:-2}"
 GUNICORN_LOG_LEVEL="${GUNICORN_LOG_LEVEL:-'info'}"
-NGINX_CONF_FILE=/opt/recipes/nginx/conf.d/Recipes.conf
+
+if [ "${TANDOOR_PORT}" -eq 80 ]; then
+    echo "TANDOOR_PORT set to 8080 because 80 is now taken by the integrated nginx"
+    TANDOOR_PORT=8080
+fi
 
 display_warning() {
     echo "[WARNING]"
@@ -13,11 +17,6 @@ display_warning() {
 }
 
 echo "Checking configuration..."
-
-# Nginx config file must exist if gunicorn is not active
-if [ ! -f "$NGINX_CONF_FILE" ] && [ $GUNICORN_MEDIA -eq 0 ]; then
-    display_warning "Nginx configuration file could not be found at the default location!\nPath: ${NGINX_CONF_FILE}"
-fi
 
 # SECRET_KEY (or a valid file at SECRET_KEY_FILE) must be set in .env file
 
@@ -29,6 +28,21 @@ if [ -z "${SECRET_KEY}" ]; then
     display_warning "The environment variable 'SECRET_KEY' (or 'SECRET_KEY_FILE' that points to an existing file) is not set but REQUIRED for running Tandoor!"
 fi
 
+if [ -f "${AUTH_LDAP_BIND_PASSWORD_FILE}" ]; then
+    export AUTH_LDAP_BIND_PASSWORD=$(cat "$AUTH_LDAP_BIND_PASSWORD_FILE")
+fi
+
+if [ -f "${EMAIL_HOST_PASSWORD_FILE}" ]; then
+    export EMAIL_HOST_PASSWORD=$(cat "$EMAIL_HOST_PASSWORD_FILE")
+fi
+
+if [ -f "${SOCIALACCOUNT_PROVIDERS_FILE}" ]; then
+    export SOCIALACCOUNT_PROVIDERS=$(cat "$SOCIALACCOUNT_PROVIDERS_FILE")
+fi
+
+if [ -f "${S3_SECRET_ACCESS_KEY_FILE}" ]; then
+    export S3_SECRET_ACCESS_KEY=$(cat "$S3_SECRET_ACCESS_KEY_FILE")
+fi
 
 echo "Waiting for database to be ready..."
 
@@ -69,7 +83,6 @@ python manage.py migrate
 
 echo "Collecting static files, this may take a while..."
 
-python manage.py collectstatic_js_reverse
 python manage.py collectstatic --noinput
 
 echo "Done"
@@ -78,6 +91,11 @@ chmod -R 755 /opt/recipes/mediafiles
 
 ipv6_disable=$(cat /sys/module/ipv6/parameters/disable)
 
+# start nginx
+echo "Starting nginx"
+nginx
+
+echo "Starting gunicorn"
 # Check if IPv6 is enabled, only then run gunicorn with ipv6 support
 if [ "$ipv6_disable" -eq 0 ]; then
     exec gunicorn -b "[::]:$TANDOOR_PORT" --workers $GUNICORN_WORKERS --threads $GUNICORN_THREADS --access-logfile - --error-logfile - --log-level $GUNICORN_LOG_LEVEL recipes.wsgi

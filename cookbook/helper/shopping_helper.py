@@ -113,7 +113,7 @@ class RecipeShoppingEditor():
         if not self.servings:
             self.servings = getattr(self.mealplan, 'servings', None) or getattr(self.recipe, 'servings', 1.0)
 
-        self._shopping_list_recipe = ShoppingListRecipe.objects.create(recipe=self.recipe, mealplan=self.mealplan, servings=self.servings)
+        self._shopping_list_recipe = ShoppingListRecipe.objects.create(recipe=self.recipe, mealplan=self.mealplan, servings=self.servings, space=self.space, created_by=self.created_by)
 
         if ingredients:
             self._add_ingredients(ingredients=ingredients)
@@ -153,8 +153,9 @@ class RecipeShoppingEditor():
             return True
 
         for sle in ShoppingListEntry.objects.filter(list_recipe=self._shopping_list_recipe):
-            sle.amount = sle.ingredient.amount * Decimal(self._servings_factor)
-            sle.save()
+            if sle.ingredient: # TODO temporarily dont scale manual entries until ingredient_amount or some other base amount has been migrated to SLE
+                sle.amount = sle.ingredient.amount * Decimal(self._servings_factor)
+                sle.save()
         self._shopping_list_recipe.servings = self.servings
         self._shopping_list_recipe.save()
         return True
